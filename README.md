@@ -57,6 +57,36 @@ You don’t need 100 resources. You need the right ones. These are it.
 
 ---
 
+## 🤖 Example Stock Market Bot
+
+This repository now includes a simple Python script, `stock_bot.py`, that automatically collects
+stock prices from Yahoo Finance and stores them in a CSV file. It can be used as a starting point
+for building data-driven agents.
+
+### Usage
+
+1. Install dependencies:
+
+   ```bash
+   pip install -r requirements.txt
+   ```
+
+2. Run the bot with default settings (checks Apple and Microsoft every minute):
+
+   ```bash
+   python stock_bot.py
+   ```
+
+3. Customize tickers, interval, and output file:
+
+   ```bash
+   python stock_bot.py --tickers AAPL TSLA GOOGL --interval 300 --output prices.csv
+   ```
+
+The bot will append timestamped prices to the specified CSV file on each interval.
+
+---
+
 ## 🔍 Tags
 
 `ai-agents` · `llm` · `autonomous-agents` · `openai` · `google` · `anthropic` · `starter-kit` · `agent-design` · `prompt-engineering`
