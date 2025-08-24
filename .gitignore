@@ -2,3 +2,6 @@
 *.log
 node_modules/
 .env
+*.csv
+__pycache__/
+*.pyc
