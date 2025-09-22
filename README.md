@@ -69,4 +69,28 @@ This repository organizes **publicly available, expert-authored documents**.
 It is intended for **non-commercial, educational use**.  
 All content belongs to its original authors and organizations.
 
+---
 
+## 🚀 Taiwan Stock Trend Intelligence Demo
+
+This repository now includes a reference implementation of a Taiwan stock analysis agent.
+
+### Backend (FastAPI)
+1. Create and activate a virtual environment
+   ```bash
+   cd backend
+   python -m venv .venv
+   source .venv/bin/activate
+   pip install -r requirements.txt
+   ```
+2. Launch the API
+   ```bash
+   uvicorn app.main:app --reload
+   ```
+
+The API exposes `GET /api/v1/analysis/{symbol}` which downloads recent Taiwan stock data, computes technical indicators, trains a lightweight logistic model, and aggregates financial news sentiment.
+
+### Frontend (Static HTML)
+The `frontend/index.html` file consumes the API and renders a rich dashboard with price charts, indicator summaries, and news event tagging. Serve the file with any static web server (e.g. `python -m http.server`) while the API is running.
+
+> ⚠️ **Disclaimer:** Market data and sentiment analysis are retrieved from third-party sources and may be incomplete. All outputs are for reference only and do not constitute investment advice.
