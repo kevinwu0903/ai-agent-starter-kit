@@ -1,0 +1,332 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+  <head>
+    <meta charset="utf-8" />
+    <title>台股智慧趨勢儀表板</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/modern-normalize/2.0.0/modern-normalize.min.css" integrity="sha512-DhMsUhnFcTPJBWYE9GC2Geuxd0eWlH3pPzkqIfjP2gI/9PpNvqo0NHHV44vzAOTSmZ0mft5mLbdAG47lJtiZeg==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: "Noto Sans TC", "Helvetica Neue", Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      body {
+        max-width: 1100px;
+        margin: 0 auto;
+        padding: 2rem 1.5rem 4rem;
+      }
+      h1 {
+        font-size: 2rem;
+        margin-bottom: 1rem;
+      }
+      form {
+        display: flex;
+        gap: 0.75rem;
+        margin-bottom: 1.5rem;
+        flex-wrap: wrap;
+      }
+      input[type="text"] {
+        flex: 1 1 240px;
+        padding: 0.65rem 1rem;
+        border-radius: 0.75rem;
+        border: none;
+        background: rgba(15, 23, 42, 0.75);
+        color: inherit;
+        box-shadow: inset 0 0 0 1px rgba(148, 163, 184, 0.25);
+      }
+      button {
+        padding: 0.65rem 1.5rem;
+        border-radius: 0.75rem;
+        border: none;
+        background: linear-gradient(135deg, #0ea5e9, #6366f1);
+        color: white;
+        font-weight: 600;
+        cursor: pointer;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: progress;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+      }
+      .card {
+        background: rgba(15, 23, 42, 0.7);
+        border-radius: 1rem;
+        padding: 1rem 1.25rem;
+        box-shadow: 0 20px 45px rgba(15, 23, 42, 0.35);
+      }
+      .price {
+        font-size: 2rem;
+        font-weight: 700;
+      }
+      .muted {
+        color: rgba(226, 232, 240, 0.7);
+        font-size: 0.9rem;
+      }
+      .news-list {
+        list-style: none;
+        padding: 0;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+      .news-list li {
+        background: rgba(15, 23, 42, 0.6);
+        border-radius: 0.75rem;
+        padding: 0.9rem 1rem;
+        border-left: 3px solid rgba(148, 163, 184, 0.45);
+      }
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+        padding: 0.25rem 0.6rem;
+        border-radius: 999px;
+        font-size: 0.75rem;
+        margin-right: 0.5rem;
+      }
+      .badge[data-tone="positive"] {
+        background: rgba(34, 197, 94, 0.18);
+        color: #4ade80;
+      }
+      .badge[data-tone="negative"] {
+        background: rgba(248, 113, 113, 0.18);
+        color: #f87171;
+      }
+      .badge[data-tone="neutral"] {
+        background: rgba(148, 163, 184, 0.18);
+        color: #cbd5f5;
+      }
+      canvas {
+        width: 100% !important;
+        max-height: 360px;
+      }
+      .error {
+        color: #f87171;
+        margin-top: 1rem;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>台股智慧趨勢儀表板</h1>
+    <p class="muted">輸入上市櫃股票代號（例如：2330、2317），即可取得最新趨勢預測與相關訊息。資料僅供參考，非投資建議。</p>
+
+    <form id="lookup-form">
+      <input id="symbol" type="text" placeholder="請輸入台股代號" required />
+      <button type="submit">分析</button>
+    </form>
+
+    <div id="error" class="error" hidden></div>
+
+    <section id="results" hidden>
+      <div class="grid">
+        <div class="card">
+          <div class="muted">收盤價</div>
+          <div class="price" id="last-price">--</div>
+          <div class="muted" id="price-change"></div>
+        </div>
+        <div class="card">
+          <div class="muted">模型趨勢預估</div>
+          <div class="price" id="trend"></div>
+          <div class="muted" id="trend-rationale"></div>
+        </div>
+        <div class="card">
+          <div class="muted">技術指標</div>
+          <ul class="muted" id="indicators"></ul>
+        </div>
+      </div>
+
+      <div class="card" style="margin-bottom:1.5rem;">
+        <canvas id="price-chart"></canvas>
+      </div>
+
+      <div class="card">
+        <h2 style="margin-top:0;">最新新聞與政經事件</h2>
+        <ul class="news-list" id="news-list"></ul>
+      </div>
+    </section>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js" integrity="sha384-P2YNSeNBY0d5hDOGOZa2m30IZHuZOKhHvJ3C0cI85FhF38sZ4N2VNivg8XcX4JZ7" crossorigin="anonymous"></script>
+    <script>
+      const form = document.getElementById('lookup-form');
+      const symbolInput = document.getElementById('symbol');
+      const results = document.getElementById('results');
+      const errorBox = document.getElementById('error');
+      const lastPriceEl = document.getElementById('last-price');
+      const priceChangeEl = document.getElementById('price-change');
+      const trendEl = document.getElementById('trend');
+      const trendRationaleEl = document.getElementById('trend-rationale');
+      const indicatorsEl = document.getElementById('indicators');
+      const newsListEl = document.getElementById('news-list');
+      let chartInstance = null;
+
+      const formatNumber = (value, digits = 2) => {
+        return Number.parseFloat(value).toFixed(digits);
+      };
+
+      const sentimentTone = (label) => {
+        switch (label) {
+          case 'positive':
+            return '正向';
+          case 'negative':
+            return '負向';
+          case 'neutral':
+          default:
+            return '中性';
+        }
+      };
+
+      const toneColor = (label) => {
+        switch (label) {
+          case 'positive':
+            return 'positive';
+          case 'negative':
+            return 'negative';
+          case 'neutral':
+          default:
+            return 'neutral';
+        }
+      };
+
+      const renderChart = (history) => {
+        const labels = history.map((item) => new Date(item.date).toLocaleDateString());
+        const data = history.map((item) => item.close);
+
+        const ctx = document.getElementById('price-chart');
+        if (chartInstance) {
+          chartInstance.destroy();
+        }
+        chartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels,
+            datasets: [
+              {
+                label: '收盤價',
+                data,
+                borderColor: '#38bdf8',
+                backgroundColor: 'rgba(14, 165, 233, 0.25)',
+                tension: 0.24,
+                fill: true,
+              },
+            ],
+          },
+          options: {
+            responsive: true,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => `收盤價：${formatNumber(ctx.parsed.y)} 元`,
+                },
+              },
+            },
+            scales: {
+              x: {
+                ticks: { maxTicksLimit: 10 },
+              },
+              y: {
+                ticks: {
+                  callback: (value) => `${value} 元`,
+                },
+              },
+            },
+          },
+        });
+      };
+
+      const renderIndicators = (indicators) => {
+        indicatorsEl.innerHTML = '';
+        const entries = [
+          ['5 日均線', indicators.moving_average_5],
+          ['20 日均線', indicators.moving_average_20],
+          ['60 日均線', indicators.moving_average_60],
+          ['RSI(14)', indicators.rsi_14],
+          ['MACD', indicators.macd],
+          ['MACD Signal', indicators.macd_signal],
+        ];
+        for (const [label, value] of entries) {
+          const li = document.createElement('li');
+          li.textContent = `${label}: ${value !== null && value !== undefined ? formatNumber(value) : '—'}`;
+          indicatorsEl.appendChild(li);
+        }
+      };
+
+      const renderNews = (news) => {
+        newsListEl.innerHTML = '';
+        if (!news.length) {
+          const li = document.createElement('li');
+          li.textContent = '暫無相關新聞或政經事件';
+          newsListEl.appendChild(li);
+          return;
+        }
+        for (const article of news) {
+          const li = document.createElement('li');
+          const sentiment = article.sentiment_label || 'neutral';
+          li.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:1rem;flex-wrap:wrap;">
+              <div>
+                <span class="badge" data-tone="${toneColor(sentiment)}">${sentimentTone(sentiment)}</span>
+                <span class="muted">${new Date(article.published_at).toLocaleString()}</span>
+              </div>
+              <div class="muted">${article.source || ''}</div>
+            </div>
+            <div style="margin-top:0.5rem; font-weight:600;">
+              <a href="${article.url}" target="_blank" rel="noopener" style="color:#93c5fd;">${article.title}</a>
+            </div>
+            <p style="margin:0.4rem 0 0;" class="muted">${article.summary || ''}</p>
+          `;
+          newsListEl.appendChild(li);
+        }
+      };
+
+      const setLoading = (loading) => {
+        form.querySelector('button').disabled = loading;
+      };
+
+      form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const symbol = symbolInput.value.trim();
+        if (!symbol) {
+          return;
+        }
+        setLoading(true);
+        errorBox.hidden = true;
+        results.hidden = true;
+        try {
+          const response = await fetch(`/api/v1/analysis/${encodeURIComponent(symbol)}`);
+          if (!response.ok) {
+            throw new Error('查無資料，請確認代號是否正確');
+          }
+          const data = await response.json();
+          lastPriceEl.textContent = `${formatNumber(data.last_price)} 元`;
+          const diff = data.price_change ?? 0;
+          const pct = data.percent_change ?? 0;
+          const sign = diff >= 0 ? '+' : '-';
+          priceChangeEl.textContent = `${sign}${formatNumber(Math.abs(diff))} 元 (${sign}${formatNumber(Math.abs(pct))}%)`;
+          priceChangeEl.style.color = diff >= 0 ? '#4ade80' : '#f87171';
+
+          trendEl.textContent = `${data.prediction.expected_trend}`;
+          trendRationaleEl.textContent = data.prediction.rationale;
+          renderIndicators(data.indicators);
+          renderChart(data.history);
+          renderNews(data.news);
+
+          results.hidden = false;
+        } catch (err) {
+          errorBox.textContent = err.message || '系統忙碌，請稍後再試';
+          errorBox.hidden = false;
+        } finally {
+          setLoading(false);
+        }
+      });
+    </script>
+  </body>
+</html>
