@@ -339,3 +339,69 @@
 - **v1.0（MVP）**：FR-01 ~ FR-07（核心流程可閉環）
 - **v1.1**：FR-08、FR-09（匯出治理與管理性）
 - **v1.2**：FR-10 + 多人即時協作評估
+
+---
+
+## 21. 表單與按鈕行為規格（UI/UX）
+
+### 21.1 專案表單（Create/Edit Project）
+- 主要按鈕：`儲存`、`取消`
+- 次要按鈕：`儲存並新增任務`
+- 驗證行為：
+  - 欄位 blur 即時驗證（格式/必填）
+  - 點擊 `儲存` 進行整體驗證
+  - 若驗證失敗，聚焦第一個錯誤欄位
+
+### 21.2 任務表單（Task Drawer）
+- 主要按鈕：`儲存任務`
+- 次要按鈕：`刪除任務`（編輯模式）
+- 行為規則：
+  - `task_type=milestone` 時，自動鎖定 `duration_days=0`
+  - `progress_percent=100` 時，提示是否同步狀態為 done
+
+### 21.3 匯出按鈕（核心需求）
+- 畫面位置：甘特頁右上角 `匯出`
+- 點擊後：開啟 `Export Modal`，可選 `Excel` / `PDF`
+- 按鈕狀態：
+  - `匯出中...`：disabled，顯示 loading
+  - `匯出完成`：toast + 下載連結
+  - `匯出失敗`：toast + 錯誤碼 + `重試`
+- 權限控制：無匯出權限時，按鈕隱藏或 disabled（由租戶策略決定）
+
+### 21.4 匯出 Modal 欄位互斥規則
+- 選 `Excel`：顯示 `excel_template`，隱藏 PDF 版面設定。
+- 選 `PDF`：顯示 `pdf_orientation`、`pdf_page_size`，隱藏 Excel 模板。
+- 未填必填參數：`開始匯出` 按鈕 disabled。
+
+---
+
+## 22. 匯出檔案內容驗收清單（Checklist）
+
+### 22.1 Excel 驗收清單
+- [ ] 檔名格式：`{project_code}_{YYYYMMDD_HHmm}.xlsx`
+- [ ] `Project_Summary` 存在且關鍵欄位完整
+- [ ] `Task_List` 含 task_name/start/end/progress/dependency
+- [ ] `Timeline` 日期軸連續且無格式錯亂
+- [ ] 日期欄位可被 Excel 視為日期（非文字）
+
+### 22.2 PDF 驗收清單
+- [ ] 檔名格式：`{project_code}_{YYYYMMDD_HHmm}.pdf`
+- [ ] 頁首顯示專案名稱
+- [ ] 頁尾顯示頁碼與匯出時間
+- [ ] 甘特圖可閱讀（字體/比例/頁面裁切正常）
+- [ ] 若無資料，顯示 No Data 並保留摘要頁
+
+---
+
+## 23. 稽核與法遵需求（Audit/Compliance）
+- 匯出行為需寫入審計日誌：
+  - user_id
+  - project_id
+  - export_format
+  - filter_payload（遮罩敏感資訊）
+  - result（success/fail）
+  - timestamp（UTC）
+- 審計資料保留期：預設 180 天（可配置）。
+- 若租戶啟用法遵模式：
+  - 匯出檔自動加浮水印（使用者/時間）
+  - 可限制僅 PDF 可匯出（禁用 Excel）
