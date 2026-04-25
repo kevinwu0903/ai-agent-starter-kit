@@ -438,3 +438,43 @@
    - [ ] Excel 詳細欄位優先
    - [ ] PDF 簡報視覺優先
    - [ ] 兩者同優先
+
+---
+
+## 27. BDD 驗收情境（Given/When/Then）
+
+### 27.1 建立專案
+- **Given** 使用者具 PM 權限且已登入
+- **When** 於專案表單填入必填欄位並點擊「儲存」
+- **Then** 系統建立專案成功並導向甘特頁
+
+### 27.2 任務依賴循環阻擋
+- **Given** 已存在任務 A 與任務 B，且 A 依賴 B
+- **When** 使用者嘗試設定 B 依賴 A
+- **Then** 系統阻擋儲存並顯示 `DEPENDENCY_CYCLE`
+
+### 27.3 Excel 匯出
+- **Given** 專案有任務資料且使用者具匯出權限
+- **When** 使用者在 Export Modal 選擇 `Excel` 並點擊「開始匯出」
+- **Then** 下載 `.xlsx`，且包含 `Project_Summary`、`Task_List`、`Timeline`
+
+### 27.4 PDF 匯出
+- **Given** 專案有任務資料且使用者具匯出權限
+- **When** 使用者在 Export Modal 選擇 `PDF(A4, landscape)` 並點擊「開始匯出」
+- **Then** 下載 `.pdf`，且含摘要、甘特圖、頁首頁尾
+
+### 27.5 權限限制
+- **Given** 使用者僅有 Viewer 權限
+- **When** 嘗試執行匯出
+- **Then** 系統回應 `EXPORT_FORBIDDEN` 且不產生檔案
+
+---
+
+## 28. 交付物清單（Definition of Done）
+- [ ] PRD 審閱通過（產品/設計/工程/QA）
+- [ ] 前端：完成專案表單、任務表單、匯出 Modal
+- [ ] 後端：完成專案/任務/匯出 API 與錯誤碼處理
+- [ ] 匯出：Excel/PDF 版型與欄位驗收通過
+- [ ] 權限：Viewer 無匯出能力驗證通過
+- [ ] 稽核：匯出審計日誌寫入與查詢可用
+- [ ] QA：核心案例（QA-01~QA-06 + BDD）全綠
